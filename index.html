@@ -138,14 +138,12 @@
       document.getElementById("output-section").style.display = "none";
 
       try {
-        // Upload images
         const [sourceUrl, targetUrl] = await Promise.all([
           uploadToImgur(sourceFile),
           uploadToImgur(targetFile)
         ]);
 
-        // Call new Face Swap API
-        const apiUrl = `https://faceswap.ytansh038.workers.dev/?imageurl=${encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
+        const apiUrl = `https://bj-devs.serv00.net/v1/faceswap.php?imageurl=${encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
 
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error(`API Error: ${response.status}`);
@@ -155,7 +153,6 @@
           throw new Error("Face swap failed. Try different images.");
         }
 
-        // Show the result image
         document.getElementById("resultImg").src = result.result;
         document.getElementById("downloadLink").href = result.result;
         document.getElementById("output-section").style.display = "block";
@@ -170,7 +167,7 @@
   </script>
 
   <div style="margin-top: 50px; font-size: 0.8em; color: #aaa;">
-    Powered by Face Swap API from @AnshApi
+    Powered by Face Swap API from @BJ_Devs
   </div>
 </body>
 </html>
