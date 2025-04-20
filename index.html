@@ -72,10 +72,14 @@
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
+
+    .error {
+      color: #ff4444;
+      margin: 15px 0;
+    }
   </style>
 </head>
 <body>
-
   <h1>Face Swapper</h1>
   <p>Upload two images and swap faces instantly!</p>
 
@@ -98,24 +102,36 @@
     </a>
   </div>
 
+  <div id="error-message" class="error"></div>
+
   <script>
     async function uploadToImgur(file) {
-      const formData = new FormData();
-      formData.append("image", file);
-      const res = await fetch("https://api.imgbb.com/1/upload?key=9a630c78902747a438f809137d5e1a37", {
-        method: "POST",
-        body: formData
-      });
-      const data = await res.json();
-      return data.data.url;
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+        const res = await fetch("https://api.imgbb.com/1/upload?key=9a630c78902747a438f809137d5e1a37", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (!data.data?.url) throw new Error("Image upload failed");
+        return data.data.url;
+      } catch (err) {
+        console.error("ImgBB Error:", err);
+        throw new Error("Failed to upload images. Please try again.");
+      }
     }
 
     async function swapFaces() {
       const sourceFile = document.getElementById("sourceImg").files[0];
       const targetFile = document.getElementById("targetImg").files[0];
+      const errorElement = document.getElementById("error-message");
+
+      // Reset previous errors
+      errorElement.textContent = "";
 
       if (!sourceFile || !targetFile) {
-        alert("Please select both images.");
+        errorElement.textContent = "Please select both images.";
         return;
       }
 
@@ -123,34 +139,49 @@
       document.getElementById("output-section").style.display = "none";
 
       try {
-        const sourceUrl = await uploadToImgur(sourceFile);
-        const targetUrl = await uploadToImgur(targetFile);
+        // Upload images
+        const [sourceUrl, targetUrl] = await Promise.all([
+          uploadToImgur(sourceFile),
+          uploadToImgur(targetFile)
+        ]);
 
-        const apiUrl = `https://bj-devs.serv00.net/v1/faceswap.php?imageurl=${encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
-
-        const response = await fetch(apiUrl);
+        // Call Face Swap API
+        const apiUrl = `https://bj-devs.serv00.net/v1/faceswap.php?imageurl=${
+          encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
+        
+        const response = await fetch(apiUrl, { mode: 'cors' });
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        
         const result = await response.json();
-
-        if (result.status && result.result) {
-          const imageResponse = await fetch(result.result);
-          const blob = await imageResponse.blob();
-          const imageObjectURL = URL.createObjectURL(blob);
-
-          document.getElementById("resultImg").src = imageObjectURL;
-          document.getElementById("downloadLink").href = imageObjectURL;
-          document.getElementById("output-section").style.display = "block";
-        } else {
-          alert("Face swap failed. Try different images.");
-          console.error("API Error:", result);
+        if (!result.status || !result.result) {
+          throw new Error(result.message || "Face swap failed. Try different images.");
         }
-      } catch (err) {
-        alert("An error occurred. Check the console.");
-        console.error("Error:", err);
-      }
 
-      document.getElementById("loading").style.display = "none";
+        // Load result image
+        const imageResponse = await fetch(result.result);
+        if (!imageResponse.ok) throw new Error("Failed to load result image");
+        
+        const blob = await imageResponse.blob();
+        const imageObjectURL = URL.createObjectURL(blob);
+
+        // Display results
+        document.getElementById("resultImg").src = imageObjectURL;
+        document.getElementById("downloadLink").href = imageObjectURL;
+        document.getElementById("output-section").style.display = "block";
+
+      } catch (err) {
+        errorElement.textContent = err.message;
+        console.error("Error Details:", err);
+      } finally {
+        document.getElementById("loading").style.display = "none";
+      }
     }
   </script>
+
+  <!-- API Credit -->
+  <div style="margin-top: 50px; font-size: 0.8em; color: #aaa;">
+    Powered by Face Swap API from BJ_Devs
+  </div>
 
 </body>
 </html>
