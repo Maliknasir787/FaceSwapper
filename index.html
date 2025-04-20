@@ -6,7 +6,6 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #0f2027;
       background: linear-gradient(to right, #2c5364, #203a43, #0f2027);
       color: #fff;
       text-align: center;
@@ -53,6 +52,26 @@
       display: none;
       margin-top: 30px;
     }
+
+    #loading {
+      display: none;
+      margin-top: 20px;
+    }
+
+    #loading div {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #ff4b2b;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      margin: 0 auto;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -64,6 +83,11 @@
   <input type="file" id="targetImg" accept="image/*">
   <br>
   <button onclick="swapFaces()">Swap Faces</button>
+
+  <div id="loading">
+    <p>Processing... Please wait.</p>
+    <div></div>
+  </div>
 
   <div id="output-section">
     <h2>Result</h2>
@@ -78,7 +102,7 @@
     async function uploadToImgur(file) {
       const formData = new FormData();
       formData.append("image", file);
-      const res = await fetch("https://api.imgbb.com/1/upload?key=YOUR_IMGBB_API_KEY", {
+      const res = await fetch("https://api.imgbb.com/1/upload?key=9a630c78902747a438f809137d5e1a37", {
         method: "POST",
         body: formData
       });
@@ -95,25 +119,36 @@
         return;
       }
 
-      const sourceUrl = await uploadToImgur(sourceFile);
-      const targetUrl = await uploadToImgur(targetFile);
+      document.getElementById("loading").style.display = "block";
+      document.getElementById("output-section").style.display = "none";
 
-      const apiUrl = `https://bj-devs.serv00.net/v1/faceswap.php?imageurl=${encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
+      try {
+        const sourceUrl = await uploadToImgur(sourceFile);
+        const targetUrl = await uploadToImgur(targetFile);
 
-      const response = await fetch(apiUrl);
-      const result = await response.json();
+        const apiUrl = `https://bj-devs.serv00.net/v1/faceswap.php?imageurl=${encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
 
-      if (result.status) {
-        const imageResponse = await fetch(result.result);
-        const blob = await imageResponse.blob();
-        const imageObjectURL = URL.createObjectURL(blob);
+        const response = await fetch(apiUrl);
+        const result = await response.json();
 
-        document.getElementById("resultImg").src = imageObjectURL;
-        document.getElementById("downloadLink").href = imageObjectURL;
-        document.getElementById("output-section").style.display = "block";
-      } else {
-        alert("Face swap failed. Try different images.");
+        if (result.status && result.result) {
+          const imageResponse = await fetch(result.result);
+          const blob = await imageResponse.blob();
+          const imageObjectURL = URL.createObjectURL(blob);
+
+          document.getElementById("resultImg").src = imageObjectURL;
+          document.getElementById("downloadLink").href = imageObjectURL;
+          document.getElementById("output-section").style.display = "block";
+        } else {
+          alert("Face swap failed. Try different images.");
+          console.error("API Error:", result);
+        }
+      } catch (err) {
+        alert("An error occurred. Check the console.");
+        console.error("Error:", err);
       }
+
+      document.getElementById("loading").style.display = "none";
     }
   </script>
 
