@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Face Swapper</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f2027;
+      background: linear-gradient(to right, #2c5364, #203a43, #0f2027);
+      color: #fff;
+      text-align: center;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 3em;
+      margin-bottom: 10px;
+    }
+
+    input[type="file"] {
+      margin: 15px;
+      padding: 10px;
+      background: #1c1c1c;
+      border-radius: 10px;
+      border: 1px solid #333;
+      color: #fff;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #ff4b2b;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 1em;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+
+    button:hover {
+      background: #ff416c;
+    }
+
+    img {
+      max-width: 90%;
+      margin-top: 30px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+
+    #output-section {
+      display: none;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Face Swapper</h1>
+  <p>Upload two images and swap faces instantly!</p>
+
+  <input type="file" id="sourceImg" accept="image/*">
+  <input type="file" id="targetImg" accept="image/*">
+  <br>
+  <button onclick="swapFaces()">Swap Faces</button>
+
+  <div id="output-section">
+    <h2>Result</h2>
+    <img id="resultImg" src="" alt="Face Swapped Image">
+    <br>
+    <a id="downloadLink" href="#" download="face_swap_result.jpg">
+      <button>Download Image</button>
+    </a>
+  </div>
+
+  <script>
+    async function uploadToImgur(file) {
+      const formData = new FormData();
+      formData.append("image", file);
+      const res = await fetch("https://api.imgbb.com/1/upload?key=YOUR_IMGBB_API_KEY", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      return data.data.url;
+    }
+
+    async function swapFaces() {
+      const sourceFile = document.getElementById("sourceImg").files[0];
+      const targetFile = document.getElementById("targetImg").files[0];
+
+      if (!sourceFile || !targetFile) {
+        alert("Please select both images.");
+        return;
+      }
+
+      const sourceUrl = await uploadToImgur(sourceFile);
+      const targetUrl = await uploadToImgur(targetFile);
+
+      const apiUrl = `https://bj-devs.serv00.net/v1/faceswap.php?imageurl=${encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
+
+      const response = await fetch(apiUrl);
+      const result = await response.json();
+
+      if (result.status) {
+        const imageResponse = await fetch(result.result);
+        const blob = await imageResponse.blob();
+        const imageObjectURL = URL.createObjectURL(blob);
+
+        document.getElementById("resultImg").src = imageObjectURL;
+        document.getElementById("downloadLink").href = imageObjectURL;
+        document.getElementById("output-section").style.display = "block";
+      } else {
+        alert("Face swap failed. Try different images.");
+      }
+    }
+  </script>
+
+</body>
+</html>
