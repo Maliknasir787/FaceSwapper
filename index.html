@@ -127,7 +127,6 @@
       const targetFile = document.getElementById("targetImg").files[0];
       const errorElement = document.getElementById("error-message");
 
-      // Reset previous errors
       errorElement.textContent = "";
 
       if (!sourceFile || !targetFile) {
@@ -145,28 +144,20 @@
           uploadToImgur(targetFile)
         ]);
 
-        // Call Face Swap API
-        const apiUrl = `https://bj-devs.serv00.net/v1/faceswap.php?imageurl=${
-          encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
-        
-        const response = await fetch(apiUrl, { mode: 'cors' });
+        // Call new Face Swap API
+        const apiUrl = `https://faceswap.ytansh038.workers.dev/?imageurl=${encodeURIComponent(sourceUrl)}&targetimg=${encodeURIComponent(targetUrl)}`;
+
+        const response = await fetch(apiUrl);
         if (!response.ok) throw new Error(`API Error: ${response.status}`);
-        
+
         const result = await response.json();
         if (!result.status || !result.result) {
-          throw new Error(result.message || "Face swap failed. Try different images.");
+          throw new Error("Face swap failed. Try different images.");
         }
 
-        // Load result image
-        const imageResponse = await fetch(result.result);
-        if (!imageResponse.ok) throw new Error("Failed to load result image");
-        
-        const blob = await imageResponse.blob();
-        const imageObjectURL = URL.createObjectURL(blob);
-
-        // Display results
-        document.getElementById("resultImg").src = imageObjectURL;
-        document.getElementById("downloadLink").href = imageObjectURL;
+        // Show the result image
+        document.getElementById("resultImg").src = result.result;
+        document.getElementById("downloadLink").href = result.result;
         document.getElementById("output-section").style.display = "block";
 
       } catch (err) {
@@ -178,10 +169,8 @@
     }
   </script>
 
-  <!-- API Credit -->
   <div style="margin-top: 50px; font-size: 0.8em; color: #aaa;">
-    Powered by Face Swap API from BJ_Devs
+    Powered by Face Swap API from @AnshApi
   </div>
-
 </body>
 </html>
